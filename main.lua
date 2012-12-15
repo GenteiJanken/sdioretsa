@@ -1,4 +1,4 @@
---[[
+	--[[
 function love.load()
 	entities = {}
 	UNIVERSE_WIDTH = 1000
