@@ -2,7 +2,7 @@
 -- Configuration file for game window
 
 function love.conf(t)
-    t.title = ""        -- The title of the window the game is in (string)
+    t.title = "SDIORETSA"        -- The title of the window the game is in (string)
     t.author = "Josh Douglass-Molloy"        -- The author of the game (string)
     t.identity = nil            -- The name of the save directory (string)
     t.version = "0.8.0"               -- The LÖVE version this game was made for (number)
