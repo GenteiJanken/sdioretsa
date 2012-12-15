@@ -9,7 +9,7 @@ function euclid(x0, x1, y0, y1)
 end
 
 function magni(x, y)
-	return sqrt( math.pow( x, 2 ), math.pow( y, 2 ) )
+	return math.sqrt( math.pow( x, 2 ), math.pow( y, 2 ) )
 end
 
 --canonical modulus
@@ -28,7 +28,7 @@ end
 --check if point is inside polygon
 function pointToPoly(point, poly)
 	res = 0.0
-	tol = 5.0
+	tol = 0.1
 	for i = 1, #poly.points - 1 do
 		vec0 = {point.x - poly.points[i].x, point.y - poly.points[i].y }
 		vec1 = {poly.points[i].x - poly.points[i+1].x, poly.points[i].y - poly.points[i+1].y }
