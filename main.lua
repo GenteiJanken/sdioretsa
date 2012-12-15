@@ -47,8 +47,15 @@ end
 	When destroyed, an asteroid will yield two asteroids of the next largest size
 ]]--
 --creates the geometry of an asteroid and endows it with direction - a janky polygon (octogon)
-function makeAsteroids(size, direction)
---make an octogon with length size on a side, moving in direction 
+function makeAsteroids(centre, radius, direction)
+--make an octagon 
+	vertices = {}
+	for i=1.0, 2.0* math.pi, math.pi/4.0 do
+		x = centre.x + math.cos(i) * radius
+		y = centre.y + math.sin(i) * radius
+		table.insert(vertices, x)
+		table.insert(vertices, y)
+	end
 
 --randomise points slightly to create natural look
 

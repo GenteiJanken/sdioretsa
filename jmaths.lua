@@ -1,4 +1,7 @@
---MATHS
+--[[
+	jmaths.lua
+	Maths library, by Josh (J)
+]]--
 
 --euclidean distance between two points 
 function euclid(x0, x1, y0, y1)
@@ -50,4 +53,14 @@ end
 function dot(x0, x1, y0, y1)
 	return x0*x1 + y0*y1 
 end
+--[[
+Generalisation - construct n-polygon enscribed in circle of given radius
 
+var cx
+var cy
+
+for (var i=0; i <  Math.PI*2; i+=Math.PI*2/n){
+	var x = cx + Math.Cos(i) * radius;
+	var y = cy + Math.Angle(i) * radius;
+}
+]]--
