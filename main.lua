@@ -7,6 +7,8 @@
 ]]--
 require("jmaths")
 
+
+
 function love.load()
 	entities = {}
 	UNIVERSE_WIDTH = 1000
@@ -21,7 +23,7 @@ function love.load()
 		velocity = {0.0, 0.0},
 		rot = 0,
 		accel = {0.0, 0.0}
-	
+		
 	}
 
 end
@@ -36,9 +38,7 @@ end
 function love.draw()
 	--draws ship
 	drawShip()
-	
-	--love.graphics.print(aster.vertices, 10, 10)
-	love.graphics.polygon('line', aster.verts)
+	drawPoly(aster.verts)
 end
 
 function drawShip()
@@ -52,9 +52,23 @@ function drawTriangle(x, y, l, rot)
 	--vertices: top, left, right
 	verts = {x, y + h/2, x - l/2, y - h/2, x + l/2, y - h/2}  
 	--rotate triangle around centre
-	love.graphics.polygon('line', verts)
+	drawPoly(verts)
+	
 end
 
+--converts world coordinates to screen and draws polygon
+function drawPoly(vertices)
+	screenverts = {}
+	for i = 1, #vertices - 1, 2 do 
+		x = vertices[i]
+		y = vertices[i+1]
+		screencoords = worldToScreen(x, y)
+		table.insert(screenverts, screencoords[1])
+		table.insert(screenverts, screencoords[2])
+	end
+	
+	love.graphics.polygon('line', screenverts)
+end
 --[[
 	SHOOTAN ASTEROIDS
 	Player has an "asterbar", divided into quarters: 
@@ -81,7 +95,7 @@ function makeAsteroids(centre, radius, direction)
 		vertices[i] = vertices[i] + math.random(-radius/3, radius/3)
 	end
 	
-	asteroid = {verts = vertices, direct = direction}
+	asteroid = {pos = centre, verts = vertices, velocity = direction}
 	return asteroid
 end
 
@@ -90,5 +104,7 @@ function worldToScreen(x, y)
 	sw = love.graphics.getWidth()
 	sh = love.graphics.getHeight()
 	 
-	return {x/UNIVERSE_WIDTH * sw, y/UNIVERSE_HEIGHT * sh }
+	 
+	res = {x/UNIVERSE_WIDTH * sw, (1 - y/UNIVERSE_HEIGHT) * sh }
+	return res
 end
