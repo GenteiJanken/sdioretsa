@@ -53,6 +53,17 @@ end
 function dot(x0, x1, y0, y1)
 	return x0*x1 + y0*y1 
 end
+
+
+--degrees to radians and vice versa
+function degtorad(theta)
+	return theta/180.0 * math.pi
+end	
+
+function radtodeg(theta)
+	return theta * 180/math.pi
+end
+
 --[[
 Generalisation - construct n-polygon enscribed in circle of given radius
 

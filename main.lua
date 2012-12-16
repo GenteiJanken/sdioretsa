@@ -10,7 +10,11 @@ require("jmaths")
 
 
 function love.load()
-	entities = {}
+
+	poss_states = {"GAME", "SPAWN"}
+	game_state = poss_states[1]
+	asteroids = {}
+	bullets = {}
 	UNIVERSE_WIDTH = 1000
 	UNIVERSE_HEIGHT = 1000
 	ASTEROID_SIZES = {small = 10, medium = 20, large = 40, huge = 80}
@@ -35,6 +39,10 @@ function love.load()
 end
 
 function love.update(dt)
+--accept input from mouse and keyboard
+
+
+
 -- update motion, wrap around screen if applicable
 --	for i =1, #entities do
 	--	moveEntity(entities[i])
@@ -53,6 +61,20 @@ end
 
 function drawShip()
 	drawTriangle(ship.pos.x, ship.pos.y, 30, ship.rot)
+end
+
+--rotates ship about its centre, rot provided in degrees 
+function rotShip(rot, dt)
+	
+end
+
+
+function moveShip(dt)
+end
+
+--move entity other than ship (these have infinite acceleration)
+function moveEntity(e, dt)
+
 end
 
 --draws an equilateral triangle centered on a 2d point
@@ -107,6 +129,16 @@ function makeAsteroids(centre, radius, direction)
 	
 	asteroid = {pos = centre, verts = vertices, velocity = direction}
 	return asteroid
+end
+
+--ship fires bullet in current direction
+function fire()
+	--bullet vector must be derived from ship rotation, which can oppose its velocity 
+	bveloc = {}
+
+	
+	
+	return {pos = ship.pos, velocity = bveloc } --return entity with position initialised to ship's, fired at ship's facing	
 end
 
 --converts world coordinates to a position on the screen FIX THIS
