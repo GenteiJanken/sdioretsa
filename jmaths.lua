@@ -69,7 +69,7 @@ function degToRad(theta)
 end	
 
 function radToDeg(theta)
-	return theta * 180/math.pi
+	return theta * 180.0/math.pi
 end
 
 --[[
