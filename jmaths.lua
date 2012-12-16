@@ -49,24 +49,31 @@ function moveEntity(e)
 	e.pos.x = canMod(e.pos.x + e.velocity.x, UNIVERSE_WIDTH)
 	e.pos.y = canMod(e.pos.y + e.velocity.y, UNIVERSE_HEIGHT)
 end
+
 --dot product of two vectors
 function dot(x0, x1, y0, y1)
 	return x0*x1 + y0*y1 
 end
 
+--obtains direction from rotation (provided in radians)
+function rotationToDir(rot)	
+	x = math.cos(rot)
+	y = math.sin(rot)
+	
+	return {x, y}
+end
 
 --degrees to radians and vice versa
-function degtorad(theta)
+function degToRad(theta)
 	return theta/180.0 * math.pi
 end	
 
-function radtodeg(theta)
+function radToDeg(theta)
 	return theta * 180/math.pi
 end
 
 --[[
 Generalisation - construct n-polygon enscribed in circle of given radius
-
 var cx
 var cy
 

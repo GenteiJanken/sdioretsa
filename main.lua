@@ -5,9 +5,7 @@
 		
 		Released under the MIT License
 ]]--
-require("jmaths")
-
-
+local jmaths = require "jmaths" 
 
 function love.load()
 
@@ -31,22 +29,29 @@ function love.load()
 	ship = {
 		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
 		velocity = {0.0, 0.0},
+		maxspeed = magni(10.0, 10.0),
 		rot = 0,
-		accel = {0.0, 0.0}
-		
+		accel = 0.0	
 	}
 
 end
 
 function love.update(dt)
 --accept input from mouse and keyboard
-
-
-
+	if love.keyboard.isDown("left") then
+		ship.rot = canMod(ship.rot + 100 * dt, 360)
+	elseif love.keyboard.isDown("right") then
+		ship.rot = canMod(ship.rot - 100 * dt, 360)
+	elseif love.keyboard.isDown("up") then
+		ship.accel = 0.5
+		
+		
+	end
 -- update motion, wrap around screen if applicable
 --	for i =1, #entities do
 	--	moveEntity(entities[i])
 --end
+moveShip()
 end
 
 function love.draw()
@@ -63,13 +68,15 @@ function drawShip()
 	drawTriangle(ship.pos.x, ship.pos.y, 30, ship.rot)
 end
 
---rotates ship about its centre, rot provided in degrees 
-function rotShip(rot, dt)
-	
-end
 
 
 function moveShip(dt)
+	ship.velocity[1] = ship.velocity[1] + math.cos(degToRad(ship.rot)) * ship.accel
+	ship.velocity[2] = ship.velocity[2] + math.sin(degToRad(ship.rot)) * ship.accel
+	
+	ship.pos.x = canMod(ship.pos.x + ship.velocity[1], UNIVERSE_WIDTH)
+	ship.pos.y = canMod(ship.pos.x + ship.velocity[1], UNIVERSE_HEIGHT)
+	ship.accel = 0.0
 end
 
 --move entity other than ship (these have infinite acceleration)
@@ -81,10 +88,28 @@ end
 -- l defines the length of a side
 function drawTriangle(x, y, l, rot)
 	h = math.sqrt(3)/2*l
+	rads = degToRad(rot)
 	--vertices: top, left, right
-	verts = {x, y + h/2, x - l/2, y - h/2, x + l/2, y - h/2}  
+	verts = {x, y + h/2, x - l/2, y - h/2, x, y - h/4, x + l/2, y - h/2}  
+	--verts = {0, h/2, -l/2, -h/2, l/2, -h/2}  
+	vertsdash = {}
 	--rotate triangle around centre
-	drawPoly(verts)
+	for i = 1, #verts - 1, 2 do 
+		xdash = verts[i]
+		ydash = verts[i+1]	
+			
+		--[[xdashdash = x + (x - xdash) * math.cos(rads) - (y - ydash) * math.sin(rads)
+		ydashdash = y + (x - xdash) * math.sin(rads) + (y - ydash) * math.cos(rads) 
+		]]--
+		xdashdash = x + (xdash - x) * math.cos(rads) - (ydash - y) * math.sin(rads)
+		ydashdash = y + (xdash - x) * math.sin(rads) + (ydash - y) * math.cos(rads) 
+		
+		table.insert(vertsdash, xdashdash)
+		table.insert(vertsdash, ydashdash)
+		
+	end	
+	
+	drawPoly(vertsdash)
 	
 end
 
