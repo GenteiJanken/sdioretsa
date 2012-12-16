@@ -13,11 +13,17 @@ function love.load()
 	entities = {}
 	UNIVERSE_WIDTH = 1000
 	UNIVERSE_HEIGHT = 1000
-	ASTEROID_SIZES = {10, 20, 40, 80}
+	ASTEROID_SIZES = {small = 10, medium = 20, large = 40, huge = 80}
 	asteroidpow = 4
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.setBackgroundColor(0,0,0)
-	aster = makeAsteroids({400, 400}, 80, -1)
+	testeroids = {
+		makeAsteroids({400, 400}, ASTEROID_SIZES.huge, -1),
+		makeAsteroids({200, 200}, ASTEROID_SIZES.medium, -1),
+		makeAsteroids({800, 800}, ASTEROID_SIZES.large, -1),	
+		makeAsteroids({100, 100}, ASTEROID_SIZES.small, -1)
+	}
+	
 	ship = {
 		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
 		velocity = {0.0, 0.0},
@@ -38,7 +44,11 @@ end
 function love.draw()
 	--draws ship
 	drawShip()
-	drawPoly(aster.verts)
+	
+	for i = 1, #testeroids do
+		drawPoly(testeroids[i].verts)
+	end
+	
 end
 
 function drawShip()
