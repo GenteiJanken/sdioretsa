@@ -6,8 +6,8 @@ function love.conf(t)
     t.author = "Josh Douglass-Molloy"        -- The author of the game (string)
     t.identity = nil            -- The name of the save directory (string)
     t.version = "0.8.0"               -- The LÖVE version this game was made for (number)
-    t.screen.width = 1000	
-    t.screen.height = 1000
+    t.screen.width = 800	
+    t.screen.height = 600
     t.console = false           -- Attach a console (boolean, Windows only)
     t.screen.fullscreen = false -- Enable fullscreen (boolean)
     t.screen.vsync = true       -- Enable vertical sync (boolean)

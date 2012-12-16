@@ -1,6 +1,6 @@
 --[[
 	jmaths.lua
-	Maths library, by Josh (J)
+	Maths library, by Josh (J) Douglass-Molloy
 ]]--
 
 --euclidean distance between two points 
