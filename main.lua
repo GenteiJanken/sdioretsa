@@ -23,31 +23,32 @@ alt_colours = {
 function love.load()
 
 	poss_game_states = {"RUN", "SPAWN", "END"}
-	game_state = poss_game_states[1]
+	game_state = "RUN"
 	poss_ship_states = {"REST", "AVOID", "HUNT"}
 	ship_state = poss_ship_states[1]
 	
 	--draggy stuff
 	spawn_point = {}	
+	spawn_time = 0.0
 	
 	asteroids = {}
 	bullets = {}
 	UNIVERSE_WIDTH = 1000
-	UNIVERSE_HEIGHT = 750
+	UNIVERSE_HEIGHT = 1000	
 	ASTEROID_SIZES = {small = 10, medium = 20, large = 40, huge = 80}
-	ASTEROID_BASE_SPEED = 5.0
+	ASTEROID_BASE_SPEED = 1.1
 	ASTEROID_SPEEDS = {small = 8.0, medium = 4.0, large = 2.0, huge = 1.0} --scales whatever minimum asteroid speed is chosen 
 	ASTEROID_HP = {small = 1, medium = 2, large = 4, huge = 8}
 	
 	
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.setBackgroundColor(0,0,0)
-	testeroids = {
-		makeAsteroid({400, 400}, "huge", {0,0}),
-		makeAsteroid({200, 200}, "medium", {0,0}),
+	--[[testeroids = {
+		makeAsteroid({400, 400}, "huge", {-100.0,0}),
+		makeAsteroid({200, 200}, "medium", {-100.0,0}),
 		makeAsteroid({800, 800}, "large", {0,0}),	
 		makeAsteroid({100, 100}, "small", {0,0})
-	}
+	}]]--
 	
 	ship = {
 		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
@@ -60,9 +61,13 @@ function love.load()
 
 	music = love.audio.newSource("bgm.ogg")
 	music:setVolume(0.1)
-	sfx = {}
-	
-	love.audio.play(music)
+	music:setLooping(true)
+	sfx = {
+		shot = love.audio.newSource("pew.wav", "static"),
+		explosion = love.audio.newSource("boom.wav", "static")
+	}
+	sfx.shot:setVolume(0.5)
+	--love.audio.play(music)
 end
 
 function love.keyreleased(key)
@@ -73,28 +78,47 @@ end
 
 --mouse management for draggy asteroid spawning
 function love.mousepressed(x, y, button)
-	if game_state ~= poss_game_states[2] then
-		if button == "l" then
-			game_state = poss_game_states[2]
-			coords = screenToWorld(x, y)
+	if button == "l" then
+		if game_state ~= "SPAWN" then		
+			game_state = "SPAWN"
+			coords = screenToWorld(x, y)			
 			table.insert(spawn_point, coords[1])
 			table.insert(spawn_point, coords[2])
 		end
+		love.graphics.print("(" .. spawn_point[1] .. ", " .. spawn_point[2] .. ")", 200, 400)
 	end
+
 end
 
 function love.mousereleased(x,y,button)
-	
 	--only spawn if there is mouse delta during click
 	realp = screenToWorld(x, y)
 	deltamouse = euclid(spawn_point[1], spawn_point[2], realp[1], realp[2])
 	direct = {realp[1] - spawn_point[1], realp[2] - spawn_point[2]} --vector between points of press and release 
 	directbar = magni(direct[1], direct[2])
+	direct[1] = direct[1] / directbar --normalise vector
+	direct[2] = direct[2] / directbar
 
-	if deltamouse ~= 0.0 then
-		table.insert(asteroids, makeAsteroid({spawn_point[1], spawn_point[2]}, "medium", direct))
+	aster_size = "small"
+	if spawn_time >= 2.0 then
+		aster_size = "medium"
 	end
-	game_state = poss_game_states[1]
+	if spawn_time >= 4.0 then
+		aster_size = "large"
+	end
+	if spawn_time >= 8.0 then
+		aster_size = "huge"
+	end	
+	
+	direct[1] = direct[1] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
+	direct[2] = direct[2] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
+	
+	if spawn_point[1]~=realp[1] or spawn_point[2] ~= realp[2] then
+		table.insert(asteroids, makeAsteroid({spawn_point[1], spawn_point[2]}, aster_size, direct))
+	end
+	game_state = "RUN"
+	spawn_point = {}
+	spawn_time = 0.0
 end
 
 function love.update(dt)
@@ -106,11 +130,13 @@ function love.update(dt)
 	elseif love.keyboard.isDown("up") then
 		ship.accel = 4.0		
 	end
-	
--- update motion, wrap around screen if necessary
-	for i = 1, #asteroids do
-		updateEntity(asteroids[i], dt, "asteroid")
+--[[	
+	for i = 1, #testeroids do
+		updateEntity(testeroids[i], dt, "asteroid")
 	end
+]]--
+-- update motion, wrap around screen if necessary
+	
 
 	for i = 1, #bullets do
 		if bullets[i].ttl <= 0.0 then
@@ -119,17 +145,30 @@ function love.update(dt)
 		end
 		updateEntity(bullets[i], dt, "bullet")
 	end 
-
 	moveShip(dt)
+	
+	for i = 1, #asteroids do
+		updateEntity(asteroids[i], dt, "asteroid")
+	end
+
+	if love.mouse.isDown("l") then
+	
+	if game_state == "SPAWN" then
+		spawn_time = spawn_time + dt
+	end
+	end
+	
+
 	
 end
 
 function love.draw()
 	--draws ship
 	drawShip()	
+	--[[
 	for i = 1, #testeroids do
 		drawPoly(testeroids[i].verts)
-	end
+	end]]--
 	love.graphics.setLine(5, "smooth")
 	for i = 1, #bullets do
 		drawBullet(bullets[i])
@@ -138,8 +177,8 @@ function love.draw()
 	for i = 1, #asteroids do
 		drawAsteroid(asteroids[i])
 	end
-	
-	
+	shape = {pos = {x = 400, y = 400}, verts = {-10, -10, -10, 10, 10, -10, 10, 10}}
+	--drawAsteroid(shape)
 	drawHud()
 end
 
@@ -269,13 +308,19 @@ function makeAsteroid(centre, size, direction)
 		table.insert(vertices, y)
 	end
 
+-- (translate back to og)
+	for i = 1, #vertices - 1, 2 do 
+		vertices[i] = vertices[i] - centre[1]
+		vertices[i+1] = vertices[i+1] - centre[2]
+	end
 --randomise points a bit to create natural look
 	for i = 1, #vertices do
 		vertices[i] = vertices[i] + math.random(-radius/3, radius/3)
 	end
+
 	
-	asteroid = {pos = {x = centre[1], y = centre[2]}, verts = vertices, velocity = {x = direction[1], y = direction[2]}}
-	return asteroid
+	return {pos = {x = centre[1], y = centre[2]}, verts = vertices, velocity = {x = direction[1], y = direction[2]}}
+
 end
 
 --destroys asteroid, possibly dividing it but possibly finishing it off
@@ -292,7 +337,9 @@ function fire()
 	bveloc.y = math.sin(degToRad(ship.rot)) * 1000.0
 	bhead.x = math.cos(degToRad(ship.rot)) * 10.0
 	bhead.y = math.sin(degToRad(ship.rot)) * 10.0
-	love.graphics.print("BULLET", 800, 800)
+	
+	sfx.shot:play()
+	sfx.shot:rewind()
 	return {pos = { x = ship.pos.x, y = ship.pos.y}, velocity = bveloc, head = bhead, ttl = 0.8 } --return entity with position initialised to ship's, fired at ship's facing	
 end
 
@@ -317,7 +364,7 @@ end
 --Draws HUD with representation of asteroid charge and number of ship lives. Uses third colour
 function drawHud()
 	--
-	if game_state == poss_game_states[2] then
+	if game_state == "SPAWN" then
 	--	love.graphics.print("(" .. love.mouse.getX() .. ", " .. love.mouse.getY() .. ")", 200, 200) 
 	end
 

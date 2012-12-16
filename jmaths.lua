@@ -19,7 +19,7 @@ end
 
 --check if two polygons collide
 function collidePolygons(p1, p2)
-	--interior angle - each point of p2 on p1
+	--interior angle test - each point of p2 on p1
 	for i = 1, #p2.points do
 		pointToPoly(p2.points[i], p1) 
 	end
