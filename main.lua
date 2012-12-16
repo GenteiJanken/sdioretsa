@@ -7,9 +7,12 @@
 ]]--
 local jmaths = require "jmaths" 
 
-default_colours = {
 
-
+--colour palettes have three colours - background, foreground, HUD
+default_colours = { 
+	{0, 0, 0}, --black
+	{255, 255, 255}, --white
+	{255, 0, 0} --red
 
 }
 
@@ -49,7 +52,7 @@ function love.load()
 	ship = {
 		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
 		velocity = {x = 0.0, y = 0.0},
-		maxspeed = magni(10.0, 10.0),
+		maxspeed = magni(1000.0, 1000.0),
 		rot = 0.0,
 		accel = 0.0,	
 		lives = 5
@@ -57,6 +60,8 @@ function love.load()
 
 	music = love.audio.newSource("bgm.ogg")
 	music:setVolume(0.1)
+	sfx = {}
+	
 	love.audio.play(music)
 end
 
@@ -71,7 +76,7 @@ function love.mousepressed(x, y, button)
 	if game_state ~= poss_game_states[2] then
 		if button == "l" then
 			game_state = poss_game_states[2]
-			coords = worldToScreen(x, y)
+			coords = screenToWorld(x, y)
 			table.insert(spawn_point, coords[1])
 			table.insert(spawn_point, coords[2])
 		end
@@ -95,11 +100,11 @@ end
 function love.update(dt)
 -- accept input from mouse and keyboard
 	if love.keyboard.isDown("left") then
-		ship.rot = canMod(ship.rot + 100.0 * dt, 360.0)
+		ship.rot = canMod(ship.rot + 200.0 * dt, 360.0)
 	elseif love.keyboard.isDown("right") then
-		ship.rot = canMod(ship.rot - 100.0 * dt, 360.0)
+		ship.rot = canMod(ship.rot - 200.0 * dt, 360.0)
 	elseif love.keyboard.isDown("up") then
-		ship.accel = 10.0		
+		ship.accel = 4.0		
 	end
 	
 -- update motion, wrap around screen if necessary
@@ -135,7 +140,6 @@ function love.draw()
 	end
 	
 	
-	
 	drawHud()
 end
 
@@ -167,8 +171,13 @@ function drawAsteroid(a)
 end
 
 function moveShip(dt)
-	ship.velocity.x = ship.velocity.x + math.cos(degToRad(ship.rot)) * ship.accel
-	ship.velocity.y = ship.velocity.y + math.sin(degToRad(ship.rot)) * ship.accel
+	
+	vxdash = ship.velocity.x + math.cos(degToRad(ship.rot)) * ship.accel
+	vydash = ship.velocity.y + math.sin(degToRad(ship.rot)) * ship.accel
+	if magni(vxdash, vydash) <= ship.maxspeed then
+		ship.velocity.x = vxdash
+		ship.velocity.y = vydash
+	end
 	
 	ship.pos.x = canMod(ship.pos.x + ship.velocity.x * dt, UNIVERSE_WIDTH)
 	ship.pos.y = canMod(ship.pos.y + ship.velocity.y * dt, UNIVERSE_HEIGHT)
@@ -284,7 +293,7 @@ function fire()
 	bhead.x = math.cos(degToRad(ship.rot)) * 10.0
 	bhead.y = math.sin(degToRad(ship.rot)) * 10.0
 	love.graphics.print("BULLET", 800, 800)
-	return {pos = { x = ship.pos.x, y = ship.pos.y}, velocity = bveloc, head = bhead, ttl = 1.0 } --return entity with position initialised to ship's, fired at ship's facing	
+	return {pos = { x = ship.pos.x, y = ship.pos.y}, velocity = bveloc, head = bhead, ttl = 0.8 } --return entity with position initialised to ship's, fired at ship's facing	
 end
 
 --converts world coordinates to a position on the screen 
@@ -309,7 +318,7 @@ end
 function drawHud()
 	--
 	if game_state == poss_game_states[2] then
-		love.graphics.print("(" .. love.mouse.getX() .. ", " .. love.mouse.getY() .. ")", 200, 200) 
+	--	love.graphics.print("(" .. love.mouse.getX() .. ", " .. love.mouse.getY() .. ")", 200, 200) 
 	end
 
 end
