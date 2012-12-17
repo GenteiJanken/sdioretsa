@@ -34,10 +34,11 @@ function love.load()
 	
 	asteroids = {}
 	bullets = {}
+	removed = {}
 	UNIVERSE_WIDTH = 1000
 	UNIVERSE_HEIGHT = 1000	
 	ASTEROID_SPAWN_TIMES = {small = 0.5, medium = 1.0, large = 2.0, huge = 4.0}
-	ASTEROID_SIZES = {small = 10, medium = 20, large = 40, huge = 80}
+	ASTEROID_SIZES = {small = 20, medium = 40, large = 80, huge = 160}
 	ASTEROID_BASE_SPEED = 16.0
 	ASTEROID_SPEEDS = {small = 8.0, medium = 4.0, large = 2.0, huge = 1.0} --scales whatever minimum asteroid speed is chosen 
 	ASTEROID_HP = {small = 1, medium = 2, large = 4, huge = 8}
@@ -45,22 +46,10 @@ function love.load()
 	
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.setBackgroundColor(0,0,0)
-	--[[testeroids = {
-		makeAsteroid({400, 400}, "huge", {-100.0,0}),
-		makeAsteroid({200, 200}, "medium", {-100.0,0}),
-		makeAsteroid({800, 800}, "large", {0,0}),	
-		makeAsteroid({100, 100}, "small", {0,0})
-	}]]--
+	
 	
 	ship = buildShip()
-	 --[[{
-		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
-		velocity = {x = 0.0, y = 0.0},
-		maxspeed = 1000.0, -- both components of ship velocity will be clamped to [-maxspeed, maxspeed]
-		rot = 0.0,
-		accel = 0.0,	
-		lives = 5
-	}]]--
+
 --settings
 		love.mouse.setGrab(true)
 --audio
@@ -104,12 +93,13 @@ end
 
 --TOFIX - asteroids launched vertically received immediately scaled velocity, achieving unreasonable speeds
 function love.mousereleased(x,y,button)
-	--only spawn if there is mouse delta during click
-	if button ~= "l" or spawn_size == "none" then
+	--only spawn if there is mouse delta during click, sufficient time delta and sufficient distance from ship
+	newmouse = screenToWorld(x, y)
+	if button ~= "l" or spawn_size == "none" or euclid(newmouse[1], newmouse[2], ship.pos.x, ship.pos.y ) < ship.radius * 1.5 then
 		return
 	end
 	
-	newmouse = screenToWorld(x, y)
+	
 	deltamouse = euclid(spawn_point[1], spawn_point[2], newmouse[1], newmouse[2])
 	direct = {newmouse[1] - spawn_point[1], newmouse[2] - spawn_point[2]} --vector between points of press and release 
 	directmag = magni(direct[1], direct[2])
@@ -120,7 +110,10 @@ function love.mousereleased(x,y,button)
 	direct[2] = direct[2] * ASTEROID_SPEEDS[spawn_size] * ASTEROID_BASE_SPEED
 	
 	if spawn_point[1]~=newmouse[1] or spawn_point[2] ~= newmouse[2] then
-		table.insert(asteroids, makeAsteroid({spawn_point[1], spawn_point[2]}, ASTEROID_SIZES[spawn_size], direct))
+		newa = makeAsteroid({spawn_point[1], spawn_point[2]}, ASTEROID_SIZES[spawn_size], direct)
+		newa.hp = ASTEROID_HP[spawn_size]
+		newa.size_grade = spawn_size
+		table.insert(asteroids, newa)
 	end
 	
 	game_state = "RUN"
@@ -132,7 +125,7 @@ end
 
 
 
-function love.update(dt)
+	function love.update(dt)
 -- accept input from mouse and keyboard
 	if love.keyboard.isDown("left") then
 		ship.rot = canMod(ship.rot + 360.0 * dt, 360.0)
@@ -143,52 +136,50 @@ function love.update(dt)
 	elseif love.keyboard.isDown("escape") then
 		love.event.push("quit")
 	end
---[[	
-	for i = 1, #testeroids do
-		updateEntity(testeroids[i], dt, "asteroid")
-	end
-]]--
+
 -- update motion, wrap around screen if necessary
 	
+	moveShip(dt)
 
 	for i = 1, #bullets do
-		if bullets[i].ttl <= 0.0 then
-			table.remove(bullets, i)
-			break
-		end
 		updateEntity(bullets[i], dt, "bullet")
+		if bullets[i].ttl <= 0.0 then
+			table.insert(removed, i)
+		end
 	end 
-	moveShip(dt)
+	
+	for i = 1, #removed do
+		table.remove(bullets, removed[i])
+	end
+	removed = {}
+	
 	
 	for i = 1, #asteroids do
 		updateEntity(asteroids[i], dt, "asteroid")
+		if(asteroids[i].hp == 0) then
+			table.insert(removed, i)
+		end
 	end
+	
+	--remove destroyed asteroids, maybe spawn some half asteroids 
+	
+	for i = 1, #removed do
+		table.remove(asteroids, removed[i])
+	end
+	removed = {}
 
 	if love.mouse.isDown("l") then
 	
-	if game_state == "SPAWN" then
-		setSpawnSize(dt)
-		
-	end
-	end
-
---after movement test collision of bullets -> asteroids, asteroids -> ship
-
-	for i = 1, #bullets do
-		
-		for j = 1, #asteroids do
+		if game_state == "SPAWN" then
+			setSpawnSize(dt)
 		
 		end
-		
 	end
 
-	for i = 1, #bullets do
-		
-		for j = 1, #asteroids do
-		
-		end
-		
-	end
+
+
+	
+	
 
 
 
@@ -210,10 +201,7 @@ end
 function love.draw()
 	--draws ship
 	drawShip()	
-	--[[
-	for i = 1, #testeroids do
-		drawPoly(testeroids[i].verts)
-	end]]--
+	
 	love.graphics.setLine(5, "smooth")
 	for i = 1, #bullets do
 		drawBullet(bullets[i])
@@ -260,6 +248,10 @@ function drawShip()
 			table.insert(trans_verts, ydash)
 		end
 	drawPoly(trans_verts)
+	if ship.invulnerable ~= 0.0 then
+		posit = worldToScreen(ship.pos.x, ship.pos.y)
+		love.graphics.circle("line", posit[1], posit[2], ship.radius)
+	end
 	
 end
 
@@ -270,7 +262,8 @@ function buildShip()
 			maxspeed = magni(1000.0, 1000.0),
 			rot = 0.0,
 			accel = 0.0,	
-			radius = 15
+			radius = 15,
+			invulnerable = 5.0
 		}
 
 	verts = {}
@@ -287,7 +280,6 @@ function buildShip()
 		verts[i] = verts[i] - tab.pos.x
 		verts[i+1] = verts[i+1] - tab.pos.y
 	end
-	
 	
 	tab.verts = verts	
 	table.insert(tab.verts, 0)
@@ -327,6 +319,19 @@ function moveShip(dt)
 	ship.pos.x = canMod(ship.pos.x + ship.velocity.x * dt, UNIVERSE_WIDTH)
 	ship.pos.y = canMod(ship.pos.y + ship.velocity.y * dt, UNIVERSE_HEIGHT)
 	
+	ship.invulnerable = clamp(ship.invulnerable - dt, 0.0, 5.0)
+	
+	
+	for i = 1, #asteroids do
+		if entityCollision(ship, asteroids[i], {"polygon", "polygon"}) ==true and ship.invulnerable ==0.0 then
+		--stuff
+			sfx.explosion:play()
+			sfx.explosion:rewind()
+			ship = buildShip()
+		end
+	end
+		
+	
 end
 
 --move entity other than ship (these have infinite acceleration)
@@ -334,8 +339,21 @@ function updateEntity(e, dt, etype)
 	e.pos.x = canMod(e.pos.x + e.velocity.x * dt, UNIVERSE_WIDTH)
 	e.pos.y = canMod(e.pos.y + e.velocity.y * dt, UNIVERSE_HEIGHT)
 
+	
+	
+
 	if etype == "bullet" then
 		e.ttl = e.ttl - dt
+		for j = 1, #asteroids do
+			if entityCollision(e, asteroids[j], {"point", "polygon"}) == true then
+				--stuff
+				asteroids[j].hp = asteroids[j].hp - 1 
+				--sfx.explosion:play()
+				love.audio.play(sfx.explosion)
+				sfx.explosion:rewind()
+				e.ttl = 0
+			end
+		end
 	end
 end
 
@@ -387,7 +405,7 @@ function makeAsteroid(centre, radius, direction)
 		vertices[i] = vertices[i] + math.random(-radius/3, radius/3)
 	end
 	
-	return {pos = {x = centre[1], y = centre[2]}, verts = vertices, velocity = {x = direction[1], y = direction[2]}}
+	return {pos = {x = centre[1], y = centre[2]}, radius = radius, verts = vertices, velocity = {x = direction[1], y = direction[2]}}
 
 end
 
@@ -406,7 +424,7 @@ function fire()
 	bhead.x = math.cos(degToRad(ship.rot)) * 10.0
 	bhead.y = math.sin(degToRad(ship.rot)) * 10.0
 	
-	sfx.shot:play()
+	love.audio.play(sfx.shot)
 	sfx.shot:rewind()
 	return {pos = { x = ship.pos.x, y = ship.pos.y}, velocity = bveloc, head = bhead, ttl = 0.8 } --return entity with position initialised to ship's, fired at ship's facing	
 end
@@ -444,7 +462,13 @@ end
 
 --returns absolute coordinates of 
 function absoluteVerts(e)
-
+	absverts = {}	
+	for i = 1, #e.verts - 1, 2 do
+		table.insert(absverts, canMod(e.verts[i] + e.pos.x, UNIVERSE_WIDTH))
+		table.insert(absverts, canMod(e.verts[i+1] + e.pos.y, UNIVERSE_HEIGHT))	
+	end
+	
+	return absverts
 end
 
 
@@ -455,37 +479,27 @@ end
 --accepts two entities and a table enumerating the type of entity in the same order eg entityCollision(ship, asteroid[i], {"polygon", "polygon"})
 function entityCollision(e1, e2, etypes)
 	
-	
 	--polygon to polygon
 	if etypes[1] == etypes[2] then 
 	--get absolute coordinates
+		absverts1 = absoluteVerts(e1)
+		absverts2 = absoluteVerts(e2)
 	
-	
-	
-		if circletest({e1.pos.x, e1.pos.y}, e1.radius, {e2.pos.x, e2.pos.y}, e2.radius) then
-			return collidePolygons({e1.verts}, {e2.verts})
+		if circleTest({e1.pos.x, e1.pos.y}, e1.radius, {e2.pos.x, e2.pos.y}, e2.radius) or collidePolygons(absverts1, absverts2) then
+			return true
 		else
 			return false
 		end
 	else --point to polygon (provided that order)
 	--get absolute coordinates for polygon
+		absverts1 = absoluteVerts(e2)
 	
-	
-		if euclid(e1.pos.x, e1.pos.y, e2.pos.x, e2.pos.y) < e2.radius then
-			return pointToPoly({e1.pos.x, e1.pos.y}, {e2.verts})
+		if euclid(e1.pos.x, e1.pos.y, e2.pos.x, e2.pos.y) <= e2.radius or pointToPoly(e1.pos, absverts1) then
+			return true
 		else
 			return false
 		end
 	end
 	
 
-end
-
---produced desired result from collision of two entities
-function resolveCollision(e1, e2, etypes)
-	--remove appropriate entities
-	
-	--play sound effect
-	sfx.explosion:play()
-	sfx.explosion:rewind()
 end

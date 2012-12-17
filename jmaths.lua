@@ -20,9 +20,13 @@ end
 --check if two polygons collide
 function collidePolygons(p1, p2)
 	--interior angle test - each point of p2 on p1
-	for i = 1, #p2.points do
-		pointToPoly(p2.points[i], p1) 
+	for i = 1, #p2 -1, 2 do
+		pointi = {x = p2[i], y = p2[i+1]}
+		if pointToPoly(pointi, p1) == true then
+			return true
+		end	
 	end
+	return false
 end
 
 --check if point is inside polygon
@@ -44,6 +48,7 @@ function pointToPoly(point, verts)
 		res = res + math.acos(dot(vec0[1], vec0[2], vec1[1], vec1[2] )/(magni(vec0[1], vec0[2])*magni(vec1[1], vec1[2])))
 	end
 	
+	
 	vec0 = {point.x - polypoints[#polypoints][1], point.y - polypoints[#polypoints][2]}
 	vec1 = {point.x - polypoints[1][1], point.y - polypoints[1][2]}
 	
@@ -52,9 +57,10 @@ function pointToPoly(point, verts)
 	print(res + tol)	
 	if res + tol < 2*math.pi then
 		return false
+	else
+		return true
 	end
 	
-	return true
 end
 
 --moves an entity
@@ -91,12 +97,8 @@ function radToDeg(theta)
 end
 
 --checks two circles for intersection
-function twoCircleTest(centre0, r0, centre1, r1)
-	if euclid(centre0[1], centre0[2], centre1[1], centre1[2]) <= r0 + r1 then
-		return true
-	else
-		return false
-	end
+function circleTest(centre0, r0, centre1, r1)
+	return euclid(centre0[1], centre0[2], centre1[1], centre1[2]) <= r0 + r1 
 end
 
 --regular n-polygon in circle of given radius at origin
