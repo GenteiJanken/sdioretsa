@@ -72,6 +72,26 @@ function radToDeg(theta)
 	return theta * 180.0/math.pi
 end
 
+--checks two circles for intersection
+function circleTest(centre0, r0, centre1, r1)
+	if euclid(centre0[1], centre0[2], centre1[1], centre1[2]) <= r0 + r1 then
+		return true
+	else
+		return false
+	end
+end
+
+--regular n-polygon in circle of given radius at origin
+function constructPoly(n, radius)
+	vertices = {}
+	for i = 1.0, i < 2* math.pi, 2*math.pi/n do
+		x = math.cos(i) * radius
+		y = math.sin(i) * radius
+		table.insert(vertices, x)
+		table.insert(vertices, y)
+	end
+	return vertices
+end
 --[[
 Generalisation - construct n-polygon enscribed in circle of given radius
 var cx

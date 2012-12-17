@@ -30,13 +30,15 @@ function love.load()
 	--draggy stuff
 	spawn_point = {}	
 	spawn_time = 0.0
+	spawn_size = "small"
 	
 	asteroids = {}
 	bullets = {}
 	UNIVERSE_WIDTH = 1000
 	UNIVERSE_HEIGHT = 1000	
+	ASTEROID_SPAWN_TIMES = {small = 0.5, medium = 1.0, large = 2.0, huge = 4.0}
 	ASTEROID_SIZES = {small = 10, medium = 20, large = 40, huge = 80}
-	ASTEROID_BASE_SPEED = 1.1
+	ASTEROID_BASE_SPEED = 16.0
 	ASTEROID_SPEEDS = {small = 8.0, medium = 4.0, large = 2.0, huge = 1.0} --scales whatever minimum asteroid speed is chosen 
 	ASTEROID_HP = {small = 1, medium = 2, large = 4, huge = 8}
 	
@@ -90,8 +92,13 @@ function love.mousepressed(x, y, button)
 
 end
 
+--TOFIX - asteroids launched vertically received immediately scaled velocity, achieving unreasonable speeds
 function love.mousereleased(x,y,button)
 	--only spawn if there is mouse delta during click
+	if button ~= "l" then
+		return
+	end
+	
 	realp = screenToWorld(x, y)
 	deltamouse = euclid(spawn_point[1], spawn_point[2], realp[1], realp[2])
 	direct = {realp[1] - spawn_point[1], realp[2] - spawn_point[2]} --vector between points of press and release 
@@ -99,27 +106,30 @@ function love.mousereleased(x,y,button)
 	direct[1] = direct[1] / directbar --normalise vector
 	direct[2] = direct[2] / directbar
 
-	aster_size = "small"
-	if spawn_time >= 2.0 then
-		aster_size = "medium"
-	end
-	if spawn_time >= 4.0 then
-		aster_size = "large"
-	end
-	if spawn_time >= 8.0 then
-		aster_size = "huge"
-	end	
+	if spawn_time >= ASTEROID_SPAWN_TIMES["small"] then
+		
+		
+		for k, v in pairs(ASTEROID_SPAWN_TIMES) do
+			if spawn_time > ASTEROID_SPAWN_TIMES[k] then
+				aster_size = k
+			end
+		end
 	
-	direct[1] = direct[1] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
-	direct[2] = direct[2] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
 	
-	if spawn_point[1]~=realp[1] or spawn_point[2] ~= realp[2] then
-		table.insert(asteroids, makeAsteroid({spawn_point[1], spawn_point[2]}, aster_size, direct))
+		direct[1] = direct[1] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
+		direct[2] = direct[2] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
+	
+		if spawn_point[1]~=realp[1] or spawn_point[2] ~= realp[2] then
+			table.insert(asteroids, makeAsteroid({spawn_point[1], spawn_point[2]}, aster_size, direct))
+		end
 	end
 	game_state = "RUN"
 	spawn_point = {}
 	spawn_time = 0.0
 end
+
+
+
 
 function love.update(dt)
 -- accept input from mouse and keyboard
@@ -184,6 +194,18 @@ end
 
 function drawShip()
 	drawTriangle(ship.pos.x, ship.pos.y, 15, ship.rot)
+end
+
+function spawnShip()
+	ship = {
+		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
+		velocity = {x = 0.0, y = 0.0},
+		maxspeed = magni(1000.0, 1000.0),
+		rot = 0.0,
+		accel = 0.0,	
+		
+	}		
+	
 end
 
 function drawBullet(b)
@@ -363,10 +385,11 @@ end
 
 --Draws HUD with representation of asteroid charge and number of ship lives. Uses third colour
 function drawHud()
-	--
+	
 	if game_state == "SPAWN" then
 	--	love.graphics.print("(" .. love.mouse.getX() .. ", " .. love.mouse.getY() .. ")", 200, 200) 
 	end
+
 
 end
 
