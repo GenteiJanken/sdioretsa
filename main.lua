@@ -52,14 +52,15 @@ function love.load()
 		makeAsteroid({100, 100}, "small", {0,0})
 	}]]--
 	
-	ship = {
+	ship = buildShip()
+	 --[[{
 		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
 		velocity = {x = 0.0, y = 0.0},
 		maxspeed = 1000.0, -- both components of ship velocity will be clamped to [-maxspeed, maxspeed]
 		rot = 0.0,
 		accel = 0.0,	
 		lives = 5
-	}	
+	}]]--
 --settings
 		love.mouse.setGrab(true)
 --audio
@@ -75,6 +76,8 @@ function love.load()
 	sfx.explosion:setVolume(0.5)
 	sfx.upgrade:setVolume(0.5)
 	--love.audio.play(music)
+--colours man
+colours = default_colours
 end
 
 function love.keyreleased(key)
@@ -109,9 +112,9 @@ function love.mousereleased(x,y,button)
 	newmouse = screenToWorld(x, y)
 	deltamouse = euclid(spawn_point[1], spawn_point[2], newmouse[1], newmouse[2])
 	direct = {newmouse[1] - spawn_point[1], newmouse[2] - spawn_point[2]} --vector between points of press and release 
-	directbar = magni(direct[1], direct[2])
-	direct[1] = direct[1] / directbar --normalise vector
-	direct[2] = direct[2] / directbar
+	directmag = magni(direct[1], direct[2])
+	direct[1] = direct[1] / directmag --normalise vector
+	direct[2] = direct[2] / directmag
 	
 	direct[1] = direct[1] * ASTEROID_SPEEDS[spawn_size] * ASTEROID_BASE_SPEED
 	direct[2] = direct[2] * ASTEROID_SPEEDS[spawn_size] * ASTEROID_BASE_SPEED
@@ -173,10 +176,12 @@ end
 
 function setSpawnSize(dt) 
 	spawn_time = spawn_time + dt
-
+	
 	for k, v in pairs(ASTEROID_SPAWN_TIMES) do
 		if spawn_time > v and (spawn_size == "none" or ASTEROID_SIZES[k] > ASTEROID_SIZES[spawn_size]) then
 			spawn_size = k
+			sfx.upgrade:play()
+			sfx.upgrade:rewind()
 		end		
 	end
 	
@@ -197,25 +202,78 @@ function love.draw()
 	for i = 1, #asteroids do
 		drawAsteroid(asteroids[i])
 	end
-	shape = {pos = {x = 400, y = 400}, verts = {-10, -10, -10, 10, 10, -10, 10, 10}}
-	--drawAsteroid(shape)
+
 	drawHud()
 end
 
 function drawShip()
-	drawTriangle(ship.pos.x, ship.pos.y, 15, ship.rot)
+	--drawTriangle(ship.pos.x, ship.pos.y, ship.verts, ship.rot)
+	rads = degToRad(ship.rot)
+	--vertices: top, left, right
+	--verts = {x, y + h/2, x - l/2,  y - h/2, x + l/2, y - h/2}  
+	
+	
+	--verts = {0, h/2, -l/2, -h/2, l/2, -h/2}  
+	vertsdash = {}
+	--rotate triangle around centre
+	for i = 1, #ship.verts - 1, 2 do 
+		xdash = ship.verts[i]
+		ydash = ship.verts[i+1]	
+			
+		--[[xdashdash = x + (x - xdash) * math.cos(rads) - (y - ydash) * math.sin(rads)
+		ydashdash = y + (x - xdash) * math.sin(rads) + (y - ydash) * math.cos(rads) 
+		]]--
+		xdashdash = xdash * math.cos(rads) - ydash * math.sin(rads)
+		ydashdash = xdash * math.sin(rads) + ydash * math.cos(rads) 
+		
+		table.insert(vertsdash, xdashdash)
+		table.insert(vertsdash, ydashdash)
+		
+	end	
+
+	trans_verts = {}		
+		for i = 1, #vertsdash - 1, 2 do 
+			xdash = ship.pos.x + vertsdash[i]
+			ydash = ship.pos.y + vertsdash[i+1]
+
+			table.insert(trans_verts, xdash)
+			table.insert(trans_verts, ydash)
+		end
+	drawPoly(trans_verts)
+	
 end
 
 function buildShip()
-	ship = {
-		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
-		velocity = {x = 0.0, y = 0.0},
-		maxspeed = magni(1000.0, 1000.0),
-		rot = 0.0,
-		accel = 0.0,	
-		
-	}		
+	tab = {
+			pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
+			velocity = {x = 0.0, y = 0.0},
+			maxspeed = magni(1000.0, 1000.0),
+			rot = 0.0,
+			accel = 0.0,	
+			size = 15
+		}
+
+	verts = {}
+	--construct triangle
+	for i=1.0, 2.0* math.pi, math.pi * 2.0/3.0 do
+		xdash = tab.pos.x + math.cos(i + math.pi) * tab.size
+		ydash = tab.pos.y + math.sin(i + math.pi) * tab.size
+		table.insert(verts, xdash)
+		table.insert(verts, ydash)
+	end
 	
+-- (translate back to og)
+	for i = 1, #verts - 1, 2 do 
+		verts[i] = verts[i] - tab.pos.x
+		verts[i+1] = verts[i+1] - tab.pos.y
+	end
+	
+	
+	tab.verts = verts	
+	table.insert(tab.verts, 0)
+	table.insert(tab.verts, 0)
+	
+	return tab
 end
 
 function drawBullet(b)
@@ -261,42 +319,6 @@ function updateEntity(e, dt, etype)
 	end
 end
 
---draws an equilateral triangle centered on a 2d point
--- l defines the length of a side
-function drawTriangle(x, y, r, rot)
-	rads = degToRad(rot)
-	--vertices: top, left, right
-	--verts = {x, y + h/2, x - l/2,  y - h/2, x + l/2, y - h/2}  
-	verts = {}
-	
-	for i=1.0, 2.0* math.pi, math.pi * 2.0/3.0 do
-		xdash = x + math.cos(i + math.pi) * r
-		ydash = y + math.sin(i + math.pi) * r
-		table.insert(verts, xdash)
-		table.insert(verts, ydash)
-	end
-	
-	--verts = {0, h/2, -l/2, -h/2, l/2, -h/2}  
-	vertsdash = {}
-	--rotate triangle around centre
-	for i = 1, #verts - 1, 2 do 
-		xdash = verts[i]
-		ydash = verts[i+1]	
-			
-		--[[xdashdash = x + (x - xdash) * math.cos(rads) - (y - ydash) * math.sin(rads)
-		ydashdash = y + (x - xdash) * math.sin(rads) + (y - ydash) * math.cos(rads) 
-		]]--
-		xdashdash = x + (xdash - x) * math.cos(rads) - (ydash - y) * math.sin(rads)
-		ydashdash = y + (xdash - x) * math.sin(rads) + (ydash - y) * math.cos(rads) 
-		
-		table.insert(vertsdash, xdashdash)
-		table.insert(vertsdash, ydashdash)
-		
-	end	
-	
-	drawPoly(vertsdash)
-	
-end
 
 --converts world coordinates to screen and draws polygon
 function drawPoly(vertices)
@@ -393,9 +415,9 @@ function drawHud()
 	--	love.graphics.print("(" .. love.mouse.getX() .. ", " .. love.mouse.getY() .. ")", 200, 200) 
 		position = {UNIVERSE_WIDTH * 0.1, UNIVERSE_HEIGHT * 0.1}
 		a = makeAsteroid(position, ASTEROID_SIZES[spawn_size]* 0.5 ,{0.0, 0.0})
-		love.graphics.setColor(default_colours[3])
+		love.graphics.setColor(colours[3])
 		drawAsteroid(a)
-		love.graphics.setColor(default_colours[2])
+		love.graphics.setColor(colours[2])
 	end
 
 end
