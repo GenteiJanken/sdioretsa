@@ -75,7 +75,7 @@ function love.load()
 	sfx.shot:setVolume(0.5)
 	sfx.explosion:setVolume(0.5)
 	sfx.upgrade:setVolume(0.5)
-	--love.audio.play(music)
+	love.audio.play(music)
 --colours man
 colours = default_colours
 end
@@ -171,7 +171,27 @@ function love.update(dt)
 		
 	end
 	end
-	
+
+--after movement test collision of bullets -> asteroids, asteroids -> ship
+
+	for i = 1, #bullets do
+		
+		for j = 1, #asteroids do
+		
+		end
+		
+	end
+
+	for i = 1, #bullets do
+		
+		for j = 1, #asteroids do
+		
+		end
+		
+	end
+
+
+
 end
 
 function setSpawnSize(dt) 
@@ -250,14 +270,14 @@ function buildShip()
 			maxspeed = magni(1000.0, 1000.0),
 			rot = 0.0,
 			accel = 0.0,	
-			size = 15
+			radius = 15
 		}
 
 	verts = {}
 	--construct triangle
 	for i=1.0, 2.0* math.pi, math.pi * 2.0/3.0 do
-		xdash = tab.pos.x + math.cos(i + math.pi) * tab.size
-		ydash = tab.pos.y + math.sin(i + math.pi) * tab.size
+		xdash = tab.pos.x + math.cos(i + math.pi) * tab.radius
+		ydash = tab.pos.y + math.sin(i + math.pi) * tab.radius
 		table.insert(verts, xdash)
 		table.insert(verts, ydash)
 	end
@@ -422,20 +442,35 @@ function drawHud()
 
 end
 
+--returns absolute coordinates of 
+function absoluteVerts(e)
+
+end
+
+
+
 --tests for collision between two entities
 --has two modes - circletest, point to polygon (bullet -> asteroid)
 --				- circletest, polygon to polygon (asteroid <-> ship)
 --accepts two entities and a table enumerating the type of entity in the same order eg entityCollision(ship, asteroid[i], {"polygon", "polygon"})
 function entityCollision(e1, e2, etypes)
 	
+	
 	--polygon to polygon
 	if etypes[1] == etypes[2] then 
+	--get absolute coordinates
+	
+	
+	
 		if circletest({e1.pos.x, e1.pos.y}, e1.radius, {e2.pos.x, e2.pos.y}, e2.radius) then
 			return collidePolygons({e1.verts}, {e2.verts})
 		else
 			return false
 		end
 	else --point to polygon (provided that order)
+	--get absolute coordinates for polygon
+	
+	
 		if euclid(e1.pos.x, e1.pos.y, e2.pos.x, e2.pos.y) < e2.radius then
 			return pointToPoly({e1.pos.x, e1.pos.y}, {e2.verts})
 		else
