@@ -92,6 +92,18 @@ function constructPoly(n, radius)
 	end
 	return vertices
 end
+
+function clamp(x, minimum, maximum)
+	if x > maximum then
+		return maximum
+	elseif x < minimum then
+		return minimum
+	else
+		return x
+	end
+end
+
+
 --[[
 Generalisation - construct n-polygon enscribed in circle of given radius
 var cx

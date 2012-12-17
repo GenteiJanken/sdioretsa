@@ -55,26 +55,31 @@ function love.load()
 	ship = {
 		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
 		velocity = {x = 0.0, y = 0.0},
-		maxspeed = magni(1000.0, 1000.0),
+		maxspeed = 1000.0, -- both components of ship velocity will be clamped to [-maxspeed, maxspeed]
 		rot = 0.0,
 		accel = 0.0,	
 		lives = 5
 	}	
-
+--audio
 	music = love.audio.newSource("bgm.ogg")
 	music:setVolume(0.1)
 	music:setLooping(true)
 	sfx = {
 		shot = love.audio.newSource("pew.wav", "static"),
-		explosion = love.audio.newSource("boom.wav", "static")
+		explosion = love.audio.newSource("boom.wav", "static"),
+		upgrade = love.audio.newSource("upgrade.wav", "static")
 	}
 	sfx.shot:setVolume(0.5)
+	sfx.explosion:setVolume(0.5)
+	sfx.upgrade:setVolume(0.5)
 	--love.audio.play(music)
 end
 
 function love.keyreleased(key)
 	if key == " " then
 		table.insert(bullets, fire())
+	elseif key == "up" then
+		ship.accel = 0.0
 	end
 end
 
@@ -110,7 +115,7 @@ function love.mousereleased(x,y,button)
 		
 		
 		for k, v in pairs(ASTEROID_SPAWN_TIMES) do
-			if spawn_time > ASTEROID_SPAWN_TIMES[k] then
+			if spawn_time > v then
 				aster_size = k
 			end
 		end
@@ -134,11 +139,11 @@ end
 function love.update(dt)
 -- accept input from mouse and keyboard
 	if love.keyboard.isDown("left") then
-		ship.rot = canMod(ship.rot + 200.0 * dt, 360.0)
+		ship.rot = canMod(ship.rot + 360.0 * dt, 360.0)
 	elseif love.keyboard.isDown("right") then
-		ship.rot = canMod(ship.rot - 200.0 * dt, 360.0)
+		ship.rot = canMod(ship.rot - 360.0 * dt, 360.0)
 	elseif love.keyboard.isDown("up") then
-		ship.accel = 4.0		
+		ship.accel = 8.0		
 	end
 --[[	
 	for i = 1, #testeroids do
@@ -196,7 +201,7 @@ function drawShip()
 	drawTriangle(ship.pos.x, ship.pos.y, 15, ship.rot)
 end
 
-function spawnShip()
+function buildShip()
 	ship = {
 		pos = {x = UNIVERSE_WIDTH/2, y = UNIVERSE_HEIGHT/2},
 		velocity = {x = 0.0, y = 0.0},
@@ -233,16 +238,12 @@ end
 
 function moveShip(dt)
 	
-	vxdash = ship.velocity.x + math.cos(degToRad(ship.rot)) * ship.accel
-	vydash = ship.velocity.y + math.sin(degToRad(ship.rot)) * ship.accel
-	if magni(vxdash, vydash) <= ship.maxspeed then
-		ship.velocity.x = vxdash
-		ship.velocity.y = vydash
-	end
+	ship.velocity.x = clamp(ship.velocity.x + math.cos(degToRad(ship.rot)) * ship.accel, -ship.maxspeed, ship.maxspeed)
+	ship.velocity.y = clamp(ship.velocity.y + math.sin(degToRad(ship.rot)) * ship.accel, -ship.maxspeed, ship.maxspeed)
 	
 	ship.pos.x = canMod(ship.pos.x + ship.velocity.x * dt, UNIVERSE_WIDTH)
 	ship.pos.y = canMod(ship.pos.y + ship.velocity.y * dt, UNIVERSE_HEIGHT)
-	ship.accel = 0.0
+	
 end
 
 --move entity other than ship (these have infinite acceleration)
@@ -339,7 +340,6 @@ function makeAsteroid(centre, size, direction)
 	for i = 1, #vertices do
 		vertices[i] = vertices[i] + math.random(-radius/3, radius/3)
 	end
-
 	
 	return {pos = {x = centre[1], y = centre[2]}, verts = vertices, velocity = {x = direction[1], y = direction[2]}}
 
@@ -393,4 +393,9 @@ function drawHud()
 
 end
 
-
+--tests for collision between two entities
+--has two modes - circletest, point to polygon (bullet -> asteroid)
+--				- circletest, polygon to polygon (asteroid <-> ship)
+--accepts two entities and a table enumerating the type of entity in the same order eg entityCollision(ship, asteroid[i], {"polygon", "polygon"})
+function entityCollision(e1, e2, etypes)
+end
