@@ -103,7 +103,6 @@ function clamp(x, minimum, maximum)
 	end
 end
 
-
 --[[
 Generalisation - construct n-polygon enscribed in circle of given radius
 var cx

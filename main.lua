@@ -30,7 +30,7 @@ function love.load()
 	--draggy stuff
 	spawn_point = {}	
 	spawn_time = 0.0
-	spawn_size = "small"
+	spawn_size = "none"
 	
 	asteroids = {}
 	bullets = {}
@@ -60,6 +60,8 @@ function love.load()
 		accel = 0.0,	
 		lives = 5
 	}	
+--settings
+		love.mouse.setGrab(true)
 --audio
 	music = love.audio.newSource("bgm.ogg")
 	music:setVolume(0.1)
@@ -100,37 +102,28 @@ end
 --TOFIX - asteroids launched vertically received immediately scaled velocity, achieving unreasonable speeds
 function love.mousereleased(x,y,button)
 	--only spawn if there is mouse delta during click
-	if button ~= "l" then
+	if button ~= "l" or spawn_size == "none" then
 		return
 	end
 	
-	realp = screenToWorld(x, y)
-	deltamouse = euclid(spawn_point[1], spawn_point[2], realp[1], realp[2])
-	direct = {realp[1] - spawn_point[1], realp[2] - spawn_point[2]} --vector between points of press and release 
+	newmouse = screenToWorld(x, y)
+	deltamouse = euclid(spawn_point[1], spawn_point[2], newmouse[1], newmouse[2])
+	direct = {newmouse[1] - spawn_point[1], newmouse[2] - spawn_point[2]} --vector between points of press and release 
 	directbar = magni(direct[1], direct[2])
 	direct[1] = direct[1] / directbar --normalise vector
 	direct[2] = direct[2] / directbar
-
-	if spawn_time >= ASTEROID_SPAWN_TIMES["small"] then
-		
-		
-		for k, v in pairs(ASTEROID_SPAWN_TIMES) do
-			if spawn_time > v then
-				aster_size = k
-			end
-		end
 	
+	direct[1] = direct[1] * ASTEROID_SPEEDS[spawn_size] * ASTEROID_BASE_SPEED
+	direct[2] = direct[2] * ASTEROID_SPEEDS[spawn_size] * ASTEROID_BASE_SPEED
 	
-		direct[1] = direct[1] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
-		direct[2] = direct[2] * ASTEROID_SPEEDS[aster_size] * ASTEROID_BASE_SPEED
-	
-		if spawn_point[1]~=realp[1] or spawn_point[2] ~= realp[2] then
-			table.insert(asteroids, makeAsteroid({spawn_point[1], spawn_point[2]}, aster_size, direct))
-		end
+	if spawn_point[1]~=newmouse[1] or spawn_point[2] ~= newmouse[2] then
+		table.insert(asteroids, makeAsteroid({spawn_point[1], spawn_point[2]}, ASTEROID_SIZES[spawn_size], direct))
 	end
+	
 	game_state = "RUN"
 	spawn_point = {}
 	spawn_time = 0.0
+	spawn_size = "none"
 end
 
 
@@ -144,6 +137,8 @@ function love.update(dt)
 		ship.rot = canMod(ship.rot - 360.0 * dt, 360.0)
 	elseif love.keyboard.isDown("up") then
 		ship.accel = 8.0		
+	elseif love.keyboard.isDown("escape") then
+		love.event.push("quit")
 	end
 --[[	
 	for i = 1, #testeroids do
@@ -169,11 +164,21 @@ function love.update(dt)
 	if love.mouse.isDown("l") then
 	
 	if game_state == "SPAWN" then
-		spawn_time = spawn_time + dt
+		setSpawnSize(dt)
+		
 	end
 	end
 	
+end
 
+function setSpawnSize(dt) 
+	spawn_time = spawn_time + dt
+
+	for k, v in pairs(ASTEROID_SPAWN_TIMES) do
+		if spawn_time > v and (spawn_size == "none" or ASTEROID_SIZES[k] > ASTEROID_SIZES[spawn_size]) then
+			spawn_size = k
+		end		
+	end
 	
 end
 
@@ -319,10 +324,9 @@ end
 
 --creates the geometry of an asteroid and endows it with direction - a janky polygon (octogon)
 --returns the asteroid polygon and direction
-function makeAsteroid(centre, size, direction)
+function makeAsteroid(centre, radius, direction)
 --make an octagon 
 	vertices = {}
-	radius = ASTEROID_SIZES[size]
 	
 	for i=1.0, 2.0* math.pi, math.pi/4.0 do
 		x = centre[1] + math.cos(i) * radius
@@ -384,12 +388,15 @@ end
 
 
 --Draws HUD with representation of asteroid charge and number of ship lives. Uses third colour
-function drawHud()
-	
-	if game_state == "SPAWN" then
+function drawHud()	
+	if game_state == "SPAWN" and spawn_size ~="none" then
 	--	love.graphics.print("(" .. love.mouse.getX() .. ", " .. love.mouse.getY() .. ")", 200, 200) 
+		position = {UNIVERSE_WIDTH * 0.1, UNIVERSE_HEIGHT * 0.1}
+		a = makeAsteroid(position, ASTEROID_SIZES[spawn_size]* 0.5 ,{0.0, 0.0})
+		love.graphics.setColor(default_colours[3])
+		drawAsteroid(a)
+		love.graphics.setColor(default_colours[2])
 	end
-
 
 end
 
@@ -398,4 +405,30 @@ end
 --				- circletest, polygon to polygon (asteroid <-> ship)
 --accepts two entities and a table enumerating the type of entity in the same order eg entityCollision(ship, asteroid[i], {"polygon", "polygon"})
 function entityCollision(e1, e2, etypes)
+	
+	--polygon to polygon
+	if etypes[1] == etypes[2] then 
+		if circletest({e1.pos.x, e1.pos.y}, e1.radius, {e2.pos.x, e2.pos.y}, e2.radius) then
+			return collidePolygons({e1.verts}, {e2.verts})
+		else
+			return false
+		end
+	else --point to polygon (provided that order)
+		if euclid(e1.pos.x, e1.pos.y, e2.pos.x, e2.pos.y) < e2.radius then
+			return pointToPoly({e1.pos.x, e1.pos.y}, {e2.verts})
+		else
+			return false
+		end
+	end
+	
+
+end
+
+--produced desired result from collision of two entities
+function resolveCollision(e1, e2, etypes)
+	--remove appropriate entities
+	
+	--play sound effect
+	sfx.explosion:play()
+	sfx.explosion:rewind()
 end
