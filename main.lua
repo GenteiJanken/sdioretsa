@@ -464,8 +464,12 @@ end
 function absoluteVerts(e)
 	absverts = {}	
 	for i = 1, #e.verts - 1, 2 do
-		table.insert(absverts, canMod(e.verts[i] + e.pos.x, UNIVERSE_WIDTH))
-		table.insert(absverts, canMod(e.verts[i+1] + e.pos.y, UNIVERSE_HEIGHT))	
+		--table.insert(absverts, canMod(e.verts[i] + e.pos.x, UNIVERSE_WIDTH))
+		--table.insert(absverts, canMod(e.verts[i+1] + e.pos.y, UNIVERSE_HEIGHT))	
+		table.insert(absverts, e.verts[i] + e.pos.x)
+		table.insert(absverts, e.verts[i+1] + e.pos.y)	
+	
+	
 	end
 	
 	return absverts
