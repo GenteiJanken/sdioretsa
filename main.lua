@@ -485,7 +485,7 @@ function entityCollision(e1, e2, etypes)
 		absverts1 = absoluteVerts(e1)
 		absverts2 = absoluteVerts(e2)
 	--circleTest({e1.pos.x, e1.pos.y}, e1.radius, {e2.pos.x, e2.pos.y}, e2.radius) or 
-		if collidePolygons(absverts1, absverts2) or collidePolygons(absverts2, absverts1) then
+		if circleTest({e1.pos.x, e1.pos.y}, e1.radius, {e2.pos.x, e2.pos.y}, e2.radius) and collidePolygons(absverts1, absverts2) or collidePolygons(absverts2, absverts1) then
 			return true
 		else
 			return false
