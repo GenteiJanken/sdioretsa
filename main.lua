@@ -79,6 +79,7 @@ end
 
 --mouse management for draggy asteroid spawning
 function love.mousepressed(x, y, button)
+
 	if button == "l" then
 		if game_state ~= "SPAWN" then		
 			game_state = "SPAWN"
@@ -95,7 +96,11 @@ end
 function love.mousereleased(x,y,button)
 	--only spawn if there is mouse delta during click, sufficient time delta and sufficient distance from ship
 	newmouse = screenToWorld(x, y)
-	if button ~= "l" or spawn_size == "none" or euclid(newmouse[1], newmouse[2], ship.pos.x, ship.pos.y ) < ship.radius * 1.5 then
+	if button ~= "l" or spawn_size == "none" or euclid(spawn_point[1], spawn_point[2], ship.pos.x, ship.pos.y ) < ship.radius * 3.0 then
+		game_state = "RUN"
+		spawn_point = {}
+		spawn_time = 0.0
+
 		return
 	end
 	
